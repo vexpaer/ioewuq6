@@ -1,30 +1,84 @@
 # Agent Instructions
 
-Your task is to repair the supplied SketchUp campus model.
+Your task is to **recreate** the campus in SketchUp from scratch.
 
-Read `README.md` before editing the model.
+**Do not repair the supplied SKP.**
 
-## Required workflow
+Read `README.md` completely before doing any modeling.
 
-1. Start from the source model under `input/`.
-2. Repair the model while preserving the original appearance, world-space placement, dimensions, materials, terrain, platforms, bridges, and building relationships.
-3. Prefer separating mixed raw geometry into meaningful Groups / Components rather than rebuilding the campus from scratch.
-4. When uncertain whether geometry is erroneous or intentional, preserve it.
-5. Do not commit directly to `main`.
-6. Create a branch and open a Pull Request.
+## Non-negotiable rule
+
+The source model under `input/` is **read-only reference material**.
+
+You MUST:
+
+1. inspect the source model and the images under `references/`;
+2. create a brand-new blank SketchUp file;
+3. rebuild the campus in that new file;
+4. save only the newly recreated model as your submission.
+
+You MUST NOT:
+
+- edit the source SKP;
+- clean or repair its geometry;
+- Save As from the source model;
+- copy the whole source model into a new file;
+- copy individual source buildings, bridges, platforms, or terrain into the final model;
+- use the old model's broken internal topology as the basis of the submission.
+
+The benchmark tests whether you can understand the reference and independently reconstruct it.
+
+## What must be reproduced
+
+Recreate as faithfully as practical:
+
+- major campus buildings;
+- building footprints, massing, height, orientation, and relative placement;
+- bridges;
+- inter-building platforms;
+- roads and plazas;
+- important terrain / elevation relationships;
+- stadium and major sports areas;
+- other structures that materially affect campus topology.
+
+The campus contains complex bridges, platforms, and terrain. Do not omit difficult structures simply because they are difficult to model.
+
+## Structure of the new model
+
+Prefer clean semantic Groups / Components, such as:
+
+`Terrain / Roads / Platforms / Bridges / Buildings / Sports / Other`
+
+Buildings, bridges, platforms, and terrain should be independently selectable where practical.
+
+Do not create unnecessary fragmented groups.
+
+## Reference priority
+
+When references disagree slightly:
+
+1. use the source SKP for 3D height, bridge, platform, slope, and spatial-connection information;
+2. use the aerial image to verify footprints and overall layout;
+3. use the zoning image only for campus extent and functional-area identification.
 
 ## Required deliverable
 
-The PR **must contain a repaired SketchUp file** at:
+The PR must add:
 
-`submissions/<agent-name>/campus_repaired.skp`
+`submissions/<agent-name>/campus_recreated.skp`
 
-A PR without the repaired `.skp` file is incomplete.
+A repaired model named `campus_repaired.skp` is **not** a valid submission for the current benchmark.
 
-Do not substitute screenshots, renders, OBJ, FBX, STL, reports, or instructions for the required SKP file.
+Screenshots, renders, reports, OBJ, FBX, STL, or scripts do not replace the required SKP.
 
-## PR title
+## GitHub workflow
 
-`[Submission] <agent-name> - campus repair`
+Do not commit the submission directly to `main`.
 
-Use the pull request template and state any unresolved problems honestly.
+Create a branch and open a Pull Request.
+
+PR title:
+
+`[Submission] <agent-name> - campus recreation`
+
+In the PR description, explicitly confirm that the final model was created from a new blank SketchUp file and was not produced by repairing or saving a copy of the source SKP.
