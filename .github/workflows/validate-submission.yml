@@ -12,7 +12,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate repaired SKP submission
+      - name: Validate recreated SKP submission
         shell: bash
         run: |
           set -euo pipefail
@@ -23,19 +23,27 @@ jobs:
           changed="$(git diff --name-status "$BASE" "$HEAD")"
           echo "$changed"
 
-          if echo "$changed" | awk '{print $2}' | grep -q '^input/'; then
-            echo "::error::Do not modify the benchmark input files."
+          protected_changes="$(
+            echo "$changed" |
+            awk '{print $2}' |
+            grep -E '^(input|references)/' || true
+          )"
+
+          if [ -n "$protected_changes" ]; then
+            echo "::error::Submission PRs must not modify input/ or references/."
+            echo "$protected_changes"
             exit 1
           fi
 
           mapfile -t skp_files < <(
             echo "$changed" |
             awk '$1 ~ /^A/ {print $2}' |
-            grep -E '^submissions/[^/]+/[^/]+\.skp$' || true
+            grep -E '^submissions/[^/]+/campus_recreated\.skp$' || true
           )
 
           if [ "${#skp_files[@]}" -lt 1 ]; then
-            echo "::error::A submission PR must ADD a repaired .skp file under submissions/<agent-name>/."
+            echo "::error::A submission PR must ADD submissions/<agent-name>/campus_recreated.skp."
+            echo "::error::Repair submissions such as campus_repaired.skp are no longer valid."
             exit 1
           fi
 
@@ -47,10 +55,10 @@ jobs:
             fi
 
             bytes="$(wc -c < "$f")"
-            echo "Found SKP: $f ($bytes bytes)"
+            echo "Found recreated SKP: $f ($bytes bytes)"
 
             if [ "$bytes" -lt 1048576 ]; then
-              echo "::warning::$f is smaller than 1 MiB; verify that this is a real repaired model."
+              echo "::warning::$f is smaller than 1 MiB; verify that it contains the recreated campus."
             fi
 
             valid=1
