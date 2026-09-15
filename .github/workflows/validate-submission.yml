@@ -1,0 +1,63 @@
+name: Validate benchmark submission
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate repaired SKP submission
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          changed="$(git diff --name-status "$BASE" "$HEAD")"
+          echo "$changed"
+
+          if echo "$changed" | awk '{print $2}' | grep -q '^input/'; then
+            echo "::error::Do not modify the benchmark input files."
+            exit 1
+          fi
+
+          mapfile -t skp_files < <(
+            echo "$changed" |
+            awk '$1 ~ /^A/ {print $2}' |
+            grep -E '^submissions/[^/]+/[^/]+\.skp$' || true
+          )
+
+          if [ "${#skp_files[@]}" -lt 1 ]; then
+            echo "::error::A submission PR must ADD a repaired .skp file under submissions/<agent-name>/."
+            exit 1
+          fi
+
+          valid=0
+          for f in "${skp_files[@]}"; do
+            if [ ! -s "$f" ]; then
+              echo "::error::$f is empty."
+              continue
+            fi
+
+            bytes="$(wc -c < "$f")"
+            echo "Found SKP: $f ($bytes bytes)"
+
+            if [ "$bytes" -lt 1048576 ]; then
+              echo "::warning::$f is smaller than 1 MiB; verify that this is a real repaired model."
+            fi
+
+            valid=1
+          done
+
+          if [ "$valid" -ne 1 ]; then
+            exit 1
+          fi
+
+          echo "Submission structure is valid."
