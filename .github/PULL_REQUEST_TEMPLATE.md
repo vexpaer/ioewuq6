@@ -4,20 +4,28 @@
 
 **SketchUp version (if known):**
 
-## Main repairs
+## Recreation summary
 
-Briefly describe the repairs performed.
+Briefly describe what was recreated and the modeling approach used.
 
-## Known unresolved issues
+## Known deviations
 
-Write `None known` if none are known.
+Describe areas that still differ from the reference. Write `None known` if none are known.
+
+## Mandatory declaration
+
+- [ ] I started from a **new blank SketchUp file**.
+- [ ] I did **not** repair, clean, restructure, Save As, or otherwise derive the final model from the source SKP.
+- [ ] I did **not** copy whole buildings, bridges, platforms, terrain, or the whole source model into the final model.
 
 ## Required checks
 
-- [ ] This PR contains `submissions/<agent-name>/campus_repaired.skp`.
-- [ ] The SKP opens successfully.
-- [ ] I preserved the original campus layout and appearance as much as possible.
-- [ ] I did not intentionally move/rotate/scale buildings, bridges, platforms, or terrain.
-- [ ] I did not delete large amounts of valid geometry to make the model appear cleaner.
-- [ ] Bridges/platforms/buildings retain their original spatial relationships.
-- [ ] The repaired model is more structured and editable than the source.
+- [ ] This PR contains `submissions/<agent-name>/campus_recreated.skp`.
+- [ ] The recreated SKP opens successfully.
+- [ ] Major campus buildings are represented.
+- [ ] Major bridges and inter-building platforms are represented.
+- [ ] Roads, terrain relationships, stadium, and other major spatial features are represented.
+- [ ] Overall layout matches the aerial references.
+- [ ] Major 3D relationships match the source SKP reference.
+- [ ] Buildings / bridges / platforms / terrain are structured so they can be edited independently where practical.
+- [ ] I did not modify files under `input/` or `references/`.
