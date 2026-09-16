@@ -65,11 +65,15 @@ When references disagree slightly:
 
 The PR must add:
 
+`submissions/<agent-name>/campus_recreated.blend`
+
+The `.blend` file is the primary submission for the current benchmark. If the environment can reliably export SketchUp, the PR may additionally include:
+
 `submissions/<agent-name>/campus_recreated.skp`
 
-A repaired model named `campus_repaired.skp` is **not** a valid submission for the current benchmark.
+A repaired model named `campus_repaired.blend` or `campus_repaired.skp` is **not** a valid submission for the current benchmark.
 
-Screenshots, renders, reports, OBJ, FBX, STL, or scripts do not replace the required SKP.
+Screenshots, renders, reports, OBJ, FBX, STL, or scripts do not replace the required BLEND.
 
 ## GitHub workflow
 
@@ -79,6 +83,6 @@ Create a branch and open a Pull Request.
 
 PR title:
 
-`[Submission] <agent-name> - campus recreation`
+`[Submission] <agent-name> - campus reconstruction`
 
-In the PR description, explicitly confirm that the final model was created from a new blank SketchUp file and was not produced by repairing or saving a copy of the source SKP.
+In the PR description, identify the Agent/model used, Blender version and main tools, reconstructed content, and known deviations. Explicitly confirm that the final model was created as a new reconstruction from the locked reference and was not produced by repairing, cleaning, or saving a copy of the source SKP.
