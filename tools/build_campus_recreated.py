@@ -21,13 +21,20 @@ QA_DIR = Path(r"E:/codex/tmp_campus_inspect")
 
 
 # The source model is expressed in a different horizontal convention.  The
-# reconstruction uses Blender's conventional X/Y/Z: X east-west, Y elevation,
-# Z north-south.  These numbers are measured layout anchors, not source mesh
+# construction helpers below use a design-space tuple (X, elevation, north/
+# south) because it makes the measured anchors easy to read.  At mesh creation
+# time it is converted to Blender's conventional X/Y horizontal plane with Z
+# as elevation.  These numbers are measured layout anchors, not source mesh
 # data.  The campus envelope is approximately 673 m x 402 m.
 
 
 def clamp(value, lo, hi):
     return max(lo, min(hi, value))
+
+
+def to_blender_space(point):
+    """Convert design-space (east, elevation, north/south) to Blender XYZ."""
+    return (point[0], point[2], point[1])
 
 
 def terrain_height(x: float, z: float) -> float:
@@ -141,7 +148,7 @@ def set_props(obj, role, basis="measured anchor; procedural reconstruction"):
 
 def mesh_object(name, verts, faces, material, collection_name, role):
     mesh = bpy.data.meshes.new(f"{name}_Mesh")
-    mesh.from_pydata(verts, [], faces)
+    mesh.from_pydata([to_blender_space(v) for v in verts], [], faces)
     mesh.update()
     obj = bpy.data.objects.new(name, mesh)
     COLLECTIONS[collection_name].objects.link(obj)
@@ -242,7 +249,10 @@ def add_uv_dome(name, center, radius, material, collection_name, role="landscape
 
 
 def add_terrain():
-    nx, nz = 38, 28
+    # A finer regular grid keeps the site as one continuous surface while
+    # preserving enough topology for the rolling/terraced elevation to read
+    # in close inspection.
+    nx, nz = 72, 48
     xmin, xmax = -32.0, 690.0
     zmin, zmax = -432.0, 32.0
     verts = []
@@ -335,24 +345,46 @@ def add_path_segments(name, points, width, heights, material="paving", collectio
 
 def add_roads_and_plazas():
     # The main perimeter roads establish the full campus extent.
-    add_corridor("South_Perimeter_Road", [(-20, -416), (228, -416), (460, -410), (690, -393)], 19, 1.1)
-    add_corridor("West_Perimeter_Road", [(34, -400), (48, -270), (67, -140), (90, -28)], 15, 1.3)
-    add_corridor("East_Perimeter_Road", [(618, -401), (642, -300), (648, -177), (647, -36)], 16, 1.5)
+    south_road = [(-20, -416), (228, -416), (460, -410), (690, -393)]
+    west_road = [(34, -400), (48, -270), (67, -140), (90, -28)]
+    east_road = [(618, -401), (642, -300), (648, -177), (647, -36)]
+    add_corridor("South_Perimeter_Sidewalk_Base", south_road, 23, 1.0, "paving_light", "Roads", "continuous road edge paving")
+    add_corridor("West_Perimeter_Sidewalk_Base", west_road, 19, 1.2, "paving_light", "Roads", "continuous road edge paving")
+    add_corridor("East_Perimeter_Sidewalk_Base", east_road, 20, 1.4, "paving_light", "Roads", "continuous road edge paving")
+    add_corridor("South_Perimeter_Road", south_road, 19, 1.1)
+    add_corridor("West_Perimeter_Road", west_road, 15, 1.3)
+    add_corridor("East_Perimeter_Road", east_road, 16, 1.5)
     # The diagonal spine and cross avenue follow the measured campus skeleton.
-    add_corridor(
-        "Central_Diagonal_Avenue",
-        [(208, -375), (248, -340), (273, -300), (304, -264), (331, -227), (353, -185), (373, -142), (395, -105), (409, -57)],
-        12,
-        12.0,
+    spine = [(208, -375), (248, -340), (273, -300), (304, -264), (331, -227), (353, -185), (373, -142), (395, -105), (409, -57)]
+    cross = [(178, -249), (251, -243), (323, -244), (404, -256), (500, -283), (620, -318)]
+    north_avenue = [(215, -73), (303, -69), (403, -73), (495, -92)]
+    south_avenue = [(194, -382), (283, -372), (382, -374), (503, -363), (625, -346)]
+    add_corridor("Central_Diagonal_Sidewalk_Base", spine, 16, 11.9, "paving_light", "Roads", "continuous spine edge paving")
+    add_corridor("Middle_Cross_Sidewalk_Base", cross, 15, 10.4, "paving_light", "Roads", "continuous cross avenue edge paving")
+    add_corridor("North_Avenue_Sidewalk_Base", north_avenue, 14, 14.9, "paving_light", "Roads", "continuous avenue edge paving")
+    add_corridor("South_Campus_Avenue_Sidewalk_Base", south_avenue, 14, 5.9, "paving_light", "Roads", "continuous avenue edge paving")
+    add_corridor("Central_Diagonal_Avenue", spine, 12, 12.0)
+    add_corridor("Middle_Cross_Avenue", cross, 11, 10.5)
+    add_corridor("North_Avenue", north_avenue, 10, 15.0)
+    add_corridor("South_Campus_Avenue", south_avenue, 10, 6.0)
+    # Continuous pedestrian links stitch the stepped platforms together;
+    # their endpoints intentionally meet at the same measured nodes.
+    add_path_segments(
+        "Core_NorthSouth_Walk",
+        [(347, -320), (347, -280), (347, -235), (347, -195), (347, -145), (347, -100)],
+        4.4,
+        [9.8, 17.5, 20.0, 25.0, 30.0, 30.4],
+        "paving_light",
+        "Platforms",
     )
-    add_corridor(
-        "Middle_Cross_Avenue",
-        [(178, -249), (251, -243), (323, -244), (404, -256), (500, -283), (620, -318)],
-        11,
-        10.5,
+    add_path_segments(
+        "Core_EastWest_Walk",
+        [(255, -250), (302, -250), (353, -250), (405, -250), (453, -235)],
+        4.2,
+        [13.0, 18.0, 21.0, 23.0, 24.0],
+        "paving_light",
+        "Platforms",
     )
-    add_corridor("North_Avenue", [(215, -73), (303, -69), (403, -73), (495, -92)], 10, 15.0)
-    add_corridor("South_Campus_Avenue", [(194, -382), (283, -372), (382, -374), (503, -363), (625, -346)], 10, 6.0)
     # Courtyards / broad inter-building decks.
     add_prism("West_Courtyard_Plaza", [(226, -284), (286, -284), (291, -219), (235, -219)], 12.2, 13.0, "paving", "Platforms", "courtyard plaza")
     add_prism("Central_Library_Terrace", [(277, -300), (356, -300), (372, -236), (319, -210), (273, -241)], 18.0, 18.8, "paving_light", "Platforms", "terraced plaza")
@@ -473,6 +505,17 @@ def rooftop_equipment(name, x, z, width, depth, roof_y, angle=0.0):
 def add_building(name, x, z, width, depth, base, height, body="cream", roof="roof", floors=3, angle=0.0, bands=True):
     add_box(f"{name}_Massing", (x, base + height * 0.5, z), (width, height, depth), body, "Buildings", "building massing", angle, bevel=0.35)
     add_box(f"{name}_Roof", (x, base + height + 0.35, z), (width + 1.0, 0.7, depth + 1.0), roof, "Buildings", "roof slab", angle, bevel=0.18)
+    floor_h = height / max(1, floors)
+    for floor in range(1, floors):
+        add_box(
+            f"{name}_FloorSlab_{floor:02d}",
+            (x, base + floor_h * floor, z),
+            (width + 0.42, 0.14, depth + 0.42),
+            "concrete",
+            "Buildings",
+            "floor edge slab",
+            angle,
+        )
     if bands:
         facade_bands(name, x, z, width, depth, base, height, floors, body, angle)
     facade_windows_and_pilasters(name, x, z, width, depth, base, height, floors, angle, balconies=(width >= 24.0 and floors <= 3))
@@ -480,6 +523,18 @@ def add_building(name, x, z, width, depth, base, height, body="cream", roof="roo
     # A small entrance canopy gives the large blocks a human-scale datum.
     ox, oz = rotate_xz(0.0, depth * 0.5 + 1.6, angle)
     add_box(f"{name}_Entry", (x + ox, base + 2.2, z + oz), (min(width * 0.45, 12), 0.35, 3.2), "paving_light", "Details", "building entrance", angle=angle)
+    # Recessed door leaves and a ground-level column rhythm make the buildings
+    # read as constructed architecture rather than isolated solid blocks.
+    for door_i, local_x in enumerate((-min(width * 0.18, 4.0), min(width * 0.18, 4.0))):
+        px, pz = local_box_point(x, z, local_x, depth * 0.5 + 0.07, angle)
+        add_box(f"{name}_EntryDoor_{door_i+1}", (px, base + 1.25, pz), (1.55, 2.35, 0.12), "glass", "Details", "entry door", angle=angle)
+    if width >= 28.0 and depth >= 10.0:
+        col_count = max(3, min(9, int(width / 6.0)))
+        for side in (-1, 1):
+            for i in range(col_count):
+                local_x = -width * 0.42 + (width * 0.84) * i / max(1, col_count - 1)
+                px, pz = local_box_point(x, z, local_x, side * (depth * 0.5 + 0.22), angle)
+                add_cylinder(f"{name}_GroundColumn_{'F' if side < 0 else 'B'}_{i+1:02d}", (px, base + 1.55, pz), 0.16, 3.1, "concrete", "Details", "ground colonnade", sides=8)
 
 
 def add_stepped_building(name, x, z, width, depth, base, height, body="brick", angle=0.0):
@@ -558,11 +613,11 @@ def add_buildings():
 def add_fine_anchor_features():
     """Small site-specific masses taken from the measured color/height plan."""
     # North green court inside the upper teaching cluster.
-    add_prism("North_Green_Court", [(305, -53), (394, -53), (394, -5), (305, -5)], 20.6, 21.0, "grass_light", "Platforms", "north courtyard lawn")
-    for i, (x, z) in enumerate(((309, -49), (390, -49), (309, -9), (390, -9))):
+    add_prism("North_Green_Court", [(305, -7), (394, -7), (394, 27), (305, 27)], 20.6, 21.0, "grass_light", "Platforms", "north courtyard lawn")
+    for i, (x, z) in enumerate(((309, -3), (390, -3), (309, 23), (390, 23))):
         add_box(f"North_Court_Planter_{i+1}", (x, 21.8, z), (3.2, 1.6, 3.2), "concrete", "Details", "courtyard planter")
-    add_box("North_Court_Walk_North", (349.5, 21.25, -2.5), (93.0, 0.28, 4.0), "paving_light", "Platforms", "courtyard walk")
-    add_box("North_Court_Walk_South", (349.5, 21.25, -55.5), (93.0, 0.28, 4.0), "paving_light", "Platforms", "courtyard walk")
+    add_box("North_Court_Walk_North", (349.5, 21.25, 29.0), (93.0, 0.28, 4.0), "paving_light", "Platforms", "courtyard walk")
+    add_box("North_Court_Walk_South", (349.5, 21.25, -9.5), (93.0, 0.28, 4.0), "paving_light", "Platforms", "courtyard walk")
 
     # The central source plan contains a sequence of differently colored
     # elevated galleries around the main pedestrian axis.
@@ -873,16 +928,19 @@ def add_cameras_and_lights():
     area_data.size = 260
     area = bpy.data.objects.new("Campus_Fill", area_data)
     scene.collection.objects.link(area)
-    area.location = (270, 250, -220)
-    look_at(area, (300, 10, -220))
+    area.location = to_blender_space((270, 250, -220))
+    look_at(area, to_blender_space((300, 10, -220)))
     # Camera 1: plan view for QA and topology.
     cam_data = bpy.data.cameras.new("Campus_Top_Camera")
     cam_data.type = "ORTHO"
-    cam_data.ortho_scale = 475.0
+    cam_data.ortho_scale = 550.0
     cam = bpy.data.objects.new("Campus_Top_Camera", cam_data)
     scene.collection.objects.link(cam)
-    cam.location = (340, 470, -204)
-    look_at(cam, (330, 7, -204))
+    # With a true plan camera, Blender's zero rotation points -Z and keeps
+    # screen X/Y aligned to the campus X/Y plane.  Using look_at here leaves
+    # a 90-degree roll because the target is directly below the camera.
+    cam.location = (329.0, -200.0, 500.0)
+    cam.rotation_euler = (0.0, 0.0, 0.0)
     scene.camera = cam
     cam["view_purpose"] = "campus topology / plan QA"
     scene.render.filepath = str(QA_DIR / "recreated_top.png")
@@ -893,8 +951,8 @@ def add_cameras_and_lights():
     ob_data.ortho_scale = 520.0
     ob = bpy.data.objects.new("Campus_Oblique_Camera", ob_data)
     scene.collection.objects.link(ob)
-    ob.location = (760, 330, 210)
-    look_at(ob, (325, 13, -205))
+    ob.location = to_blender_space((760, 330, 210))
+    look_at(ob, to_blender_space((325, 13, -205)))
     ob["view_purpose"] = "campus massing / bridge QA"
     scene.camera = ob
     scene.render.filepath = str(QA_DIR / "recreated_oblique.png")
@@ -911,6 +969,7 @@ def main():
     scene["model_type"] = "new campus reconstruction"
     scene["reference_policy"] = "locked source and supplied reference images; source geometry not copied"
     scene["reconstruction_method"] = "procedural semantic massing with measured anchors"
+    scene["coordinate_system"] = "Blender X/Y horizontal site plane; Z elevation"
     setup_materials()
     setup_collections()
     add_terrain()
